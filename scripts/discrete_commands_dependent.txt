@@ -1,0 +1,8 @@
+2
+2
+rjhp exp 0 10
+bi 10000000
+it 100000000
+pi emp
+stones 100 100000
+run

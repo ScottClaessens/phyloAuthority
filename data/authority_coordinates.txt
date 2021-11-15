@@ -1,0 +1,138 @@
+Language	Latitude	Longitude
+Aiwoo	-10.3	166.3
+Alune	-3.1	128.5
+AnejomAneityum	-20.2	169.8
+Anuta	-11.6	169.8
+Atoni	-9.7	124.3
+Baree	-1.9	120.6
+BerawanLongTerawan	3.8	114.5
+Binukid	8.2	125
+BontokGuinaang	17.1	121.1
+Bunun	23.5	120.5
+Bwaidoga	-9.3	150.2
+Canala	-21.3	165.6
+Cebuano	11.2	122.4
+CentralAmis	23.4	121.4
+ChekeHolo	-8.3	159.6
+ChuukeseAKATrukese	7.3	151.6
+Dehu	-21	167.2
+Dobuan	-9.6	150.8
+FijianBau	-17.8	178
+FutunaEast	-14.3	-178
+FutunaWest	-19.5	170.2
+Hawaiian	19.6	-155.5
+Iban	1.2	111.6
+IfugaoAmganad	16.7	121.2
+IsnegDibagatKabugaoIsneg	18.1	121.2
+ItnegBinongan	17.6	120.8
+KalingaGuinaangLubuagan_D	17.5	121.3
+Kambera	-9.9	120.3
+Kapingamarangi	1	154.8
+KayanUmaJuman	2.1	115.1
+KeiTanimbarKei	-5.8	132.8
+Kilivila	-8.5	151.1
+Kiribati	-1.2	174.7
+Kodi	-9.6	119
+Kuanua	-4.4	152.2
+Kusaie	5.3	163
+Kwaio	-9	160.9
+KwaraaeSolomonIslands	-8.7	160.8
+Lakalai	-5.4	150.4
+LamboyaLaboya	-9.7	119.4
+Lau	-8.3	160.8
+Lenakel	-19.5	169.4
+Levei	-2.2	147.2
+Luangiua	-5.5	159.7
+MaloSantaCruz	-10.7	165.9
+Manam	-4.1	145
+Mangareva	-23.1	-135
+Maori	-39	175.8
+MarovoNewGeorgia	-8.5	157.8
+Marquesan	-9.8	-139
+Marshallese	7.1	171.7
+Mekeo	-8.6	146.6
+MerinaMalagasy	-18.9	47.5
+Mota	-13.8	167.7
+Motu	-9.5	147.1
+Mussau	-1.4	149.6
+Nahavaq	-16.5	167.4
+Nengone	-21.5	168
+Nggela	-9.1	160.2
+Nguna	-17.4	168.4
+Nias	1.2	97.5
+Nukuoro	3.8	155
+Ogan	-4.1	103.3
+Paiwan	22.5	120.9
+Palauan	7.4	134.6
+Penrhyn	-9	-158
+Ponapean	6.9	158.2
+Rarotongan	-21.2	-159.8
+RejangRejang	-3.4	102.8
+Rennellese	-11.3	159.8
+RotiTermanu_D	-10.7	123.2
+Rotuman	-12.5	177.1
+Roviana	-8.1	157.5
+Saa	-9.6	161.5
+SambalBotolan	15.3	120.4
+Samoan	-13.9	-171.8
+Sika	-8.6	122.6
+Simbo	-8.3	156.5
+Siraya	22.9	120.4
+SquliqAtayal	24.4	121.3
+TaeSToraja	-3.1	119.8
+TahitianModern	-17.6	-149.4
+Tikopia	-12.3	168.8
+Toambaita	-8.4	160.6
+TobaBatak	2.3	99
+Tokelau	-9.4	-171.2
+Tongan	-21.2	-175.2
+Tontemboan	1.3	124.9
+Tsou	23.4	120.7
+UveaEast	-13.3	-176.2
+VaeakauTaumako	-9.9	167.2
+Varisi	-6.8	156.7
+Waropen	-2.3	136.5
+Wogeo	-3.2	144.1
+Woleaian	7.2	144.5
+Yamdena	-7.5	131.5
+Yami	22	121.5
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
