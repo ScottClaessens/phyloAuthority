@@ -4,9 +4,10 @@ library(future)
 library(future.callr)
 source("R/functions.R")
 options(tidyverse.quiet = TRUE)
-tar_option_set(packages = c("ape", "bayestestR", "colorspace", "cowplot", "ggrepel", 
-                            "ggtree", "phangorn", "phaseR", "phytools", "readxl", 
-                            "rethinking", "rstan", "tidyverse"))
+tar_option_set(packages = c("ape", "bayestestR", "brms", "colorspace", "cowplot", 
+                            "geosphere", "ggrepel", "ggtree", "HDInterval", "phangorn", 
+                            "phaseR", "phytools", "readxl", "rethinking", "rstan", 
+                            "tidybayes", "tidyverse"))
 plan(callr)
 # full workflow
 list(
@@ -20,9 +21,21 @@ list(
   # load society names
   tar_target(fileSociety, "data/taxon_names.xlsx", format = "file"),
   tar_target(socNames, read_xlsx(fileSociety)),
+  # load longitude and latitude points
+  tar_target(fileLonLat, "data/authority_coordinates.txt", format = "file"),
+  tar_target(lonLat, read_tsv(fileLonLat, col_types = "cdd")),
+  # plot linguistic vs. geographic distance
+  tar_target(plotDist, plotDistance(d, phylo, lonLat)),
   # get posterior trees for modelling
   tar_target(numTrees, 100),
   tar_target(iter, getPostSamples(numTrees)),
+  # fit phylogenetic GLMM in brms
+  tar_target(modelPhyloGLMM, getPhyloGLMMinitial(d, phylo)),
+  tar_target(phyloGLMMind, fitPhyloGLMM(modelPhyloGLMM, phylo, iter),
+             pattern = map(iter), iteration = "list"),
+  tar_target(phyloGLMM, combine_models(mlist = phyloGLMMind, check_data = FALSE)),
+  tar_target(postPhyloGLMM, as_draws_array(phyloGLMM, variable = "^cor_", regex = TRUE)),
+  tar_target(plotPhyloCor, plotPhyloGLMM(postPhyloGLMM)),
   # simulate OU stan model
   tar_target(fileSimStan, "stan/OU_sim_phy_ordinal.stan", format = "file"),
   tar_target(modelSimStan, stan_model(fileSimStan)),
@@ -52,7 +65,8 @@ list(
   tar_target(plotOU3, plotFlowField(post)),
   tar_target(plotOU4, plotPredManifest(post)),
   tar_target(plotOU5, plotSelectionGradient(post)),
-  tar_target(plotOU6, plotButterfly(phylo, iter, post, socNames)),
-  tar_target(plotOU7, plotTrace(post, numTrees, numChains = 4)),
-  tar_target(plotOU8, plotSim(simPost))
+  tar_target(plotOU6, plotButterfly1(phylo, iter, post, socNames)),
+  tar_target(plotOU7, plotButterfly2(phylo, iter, post, socNames, d)),
+  tar_target(plotOU8, plotTrace(post, numTrees, numChains = 4)),
+  tar_target(plotOU9, plotSim(simPost))
 )

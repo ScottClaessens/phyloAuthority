@@ -44,5 +44,8 @@ docs/
 # targets folder
 _targets/
 
+# meeting notes folder
+meetingNotes/
+
 # google drive files
 desktop.ini

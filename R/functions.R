@@ -177,10 +177,10 @@ plotFlowField <- function(post) {
   median_relAuth <- median(apply(post$eta[,1:97,2], 2, median))
   mad_polAuth    <- mad(apply(post$eta[,1:97,1], 2, median))
   mad_relAuth    <- mad(apply(post$eta[,1:97,2], 2, median))
-  low_polAuth    <- median_polAuth - mad_polAuth*2 # -2SD
-  high_polAuth   <- median_polAuth + mad_polAuth*2 # +2SD
-  low_relAuth    <- median_relAuth - mad_relAuth*2 # -2SD
-  high_relAuth   <- median_relAuth + mad_relAuth*2 # +2SD
+  low_polAuth    <- median_polAuth - mad_polAuth*2.5 # -2.5 SD
+  high_polAuth   <- median_polAuth + mad_polAuth*2.5 # +2.5 SD
+  low_relAuth    <- median_relAuth - mad_relAuth*2.5 # -2.5 SD
+  high_relAuth   <- median_relAuth + mad_relAuth*2.5 # +2.5 SD
   # get parameter values
   A <- apply(post$A, 2:3, median)
   b <- apply(post$b, 2, median)
@@ -193,35 +193,51 @@ plotFlowField <- function(post) {
     list(dy)
   }
   # set up canvas
-  svg("figures/plotPhasePlane.svg", width = 6, height = 6, pointsize = 12)
+  pdf("figures/plotPhasePlane.pdf", width = 6, height = 6, pointsize = 12)
   par(pty = "s")
   # create flow field diagram
   OU.flowField <- 
     flowField(
       OU, 
-      xlim = c(low_polAuth, high_polAuth), 
-      ylim = c(low_relAuth, high_relAuth), 
+      xlim = c(low_polAuth-0.2, high_polAuth+0.2), 
+      ylim = c(low_relAuth-0.2, high_relAuth+0.2), 
       parameters = NA, add = FALSE, 
       xlab = "", ylab = "", 
-      points = 10, col = "grey", 
+      points = 12, col = "grey", 
       xaxt = 'n', yaxt = 'n', 
       arrow.type = "proportional", 
       frac = 1.5, xaxs = "i", yaxs = "i", 
       axes = FALSE, lwd = 2
-      )
+    )
   mtext(side = 1, "Political authority (z-score)", at = median_polAuth, 
         line = 2.5, cex = 1.3)
   mtext(side = 2, "Religious authority (z-score)", at = median_relAuth, 
         line = 2.5, cex = 1.3)
+  # add cutpoint lines
+  abline(v = median(post$c1[,1]), lty = "dashed", lwd = 1.3, col = "#5387b6")
+  abline(v = median(post$c1[,2]), lty = "dashed", lwd = 1.3, col = "#5387b6")
+  abline(v = median(post$c1[,3]), lty = "dashed", lwd = 1.3, col = "#5387b6")
+  abline(h = median(post$c2[,1]), lty = "dashed", lwd = 1.3, col = "#c55852")
+  abline(h = median(post$c2[,2]), lty = "dashed", lwd = 1.3, col = "#c55852")
+  abline(h = median(post$c2[,3]), lty = "dashed", lwd = 1.3, col = "#c55852")
+  # add groupings
+  mtext(side = 3, "Absent"    , at = -2.50, line = -0.1, cex = 0.75, col = "#5387b6")
+  mtext(side = 3, "Sublocal"  , at = -0.95, line = -0.1, cex = 0.75, col = "#5387b6")
+  mtext(side = 3, "Local"     , at =  0.50, line = -0.1, cex = 0.75, col = "#5387b6")
+  mtext(side = 3, "Supralocal", at =  4.20, line = -0.1, cex = 0.75, col = "#5387b6")
+  mtext(side = 4, "Absent"    , at = -2.40, line = -0.1, cex = 0.75, col = "#c55852", las = 1)
+  mtext(side = 4, "Sublocal"  , at = -1.20, line = -0.1, cex = 0.75, col = "#c55852", las = 1)
+  mtext(side = 4, "Local"     , at =  0.35, line = -0.1, cex = 0.75, col = "#c55852", las = 1)
+  mtext(side = 4, "Supralocal", at =  4.20, line = -0.1, cex = 0.75, col = "#c55852", las = 1)
   # add nullclines to phase plane
-  nc <- 
-    nullclines(
-      OU, 
-      xlim = c(low_polAuth, high_polAuth),
-      ylim = c(low_relAuth, high_relAuth), 
-      parameters = NA, points = 20, 
-      axes = FALSE, col = c("#c55852","#5387b6"),
-      add.legend = FALSE, lwd = 4)
+  #nc <- 
+  #  nullclines(
+  #    OU, 
+  #    xlim = c(low_polAuth, high_polAuth),
+  #    ylim = c(low_relAuth, high_relAuth), 
+  #    parameters = NA, points = 20, 
+  #    axes = FALSE, col = c("#c55852","#5387b6"),
+  #    add.legend = FALSE, lwd = 4)
   # add axes
   axis(1, at = c(low_polAuth, median_polAuth, high_polAuth),
        labels = (c(low_polAuth, median_polAuth, high_polAuth) - median_polAuth) / mad_polAuth)
@@ -237,10 +253,10 @@ plotSelectionGradient <- function(post) {
   median_relAuth <- median(apply(post$eta[,1:97,2], 2, median))
   mad_polAuth    <- mad(apply(post$eta[,1:97,1], 2, median))
   mad_relAuth    <- mad(apply(post$eta[,1:97,2], 2, median))
-  low_polAuth    <- median_polAuth - mad_polAuth*2 # -2SD
-  high_polAuth   <- median_polAuth + mad_polAuth*2 # +2SD
-  low_relAuth    <- median_relAuth - mad_relAuth*2 # -2SD
-  high_relAuth   <- median_relAuth + mad_relAuth*2 # +2SD
+  low_polAuth    <- median_polAuth - mad_polAuth*2.5 # -2.5 SD
+  high_polAuth   <- median_polAuth + mad_polAuth*2.5 # +2.5 SD
+  low_relAuth    <- median_relAuth - mad_relAuth*2.5 # -2.5 SD
+  high_relAuth   <- median_relAuth + mad_relAuth*2.5 # +2.5 SD
   # get parameter values
   A <- apply(post$A, 2:3, median)
   b <- apply(post$b, 2, median)
@@ -308,10 +324,10 @@ plotPredManifest <- function(post) {
   median_relAuth <- median(apply(post$eta[,1:97,2], 2, median))
   mad_polAuth    <- mad(apply(post$eta[,1:97,1], 2, median))
   mad_relAuth    <- mad(apply(post$eta[,1:97,2], 2, median))
-  low_polAuth    <- median_polAuth - mad_polAuth*2 # -2SD
-  high_polAuth   <- median_polAuth + mad_polAuth*2 # +2SD
-  low_relAuth    <- median_relAuth - mad_relAuth*2 # -2SD
-  high_relAuth   <- median_relAuth + mad_relAuth*2 # +2SD
+  low_polAuth    <- median_polAuth - mad_polAuth*2.5 # -2.5 SD
+  high_polAuth   <- median_polAuth + mad_polAuth*2.5 # +2.5 SD
+  low_relAuth    <- median_relAuth - mad_relAuth*2.5 # -2.5 SD
+  high_relAuth   <- median_relAuth + mad_relAuth*2.5 # +2.5 SD
   # sequences for prediction
   polAuth_seq <- seq(low_polAuth, high_polAuth, length.out = 30)
   relAuth_seq <- seq(low_relAuth, high_relAuth, length.out = 30)
@@ -347,8 +363,8 @@ plotPredManifest <- function(post) {
       ggplot(aes(x = auth, y = median, ymin = lower, ymax = upper)) +
       geom_ribbon(aes(fill = `Authority level`), alpha = 0.2) +
       geom_line(aes(colour = `Authority level`), size = 1) +
-      scale_x_continuous(name = xlab, limits = (c(-2, 2)*mad) + med,
-                         breaks = (c(-2, 0, 2)*mad) + med,
+      scale_x_continuous(name = xlab, limits = (c(-2.5, 2.5)*mad) + med,
+                         breaks = (c(-2.5, 0, 2.5)*mad) + med,
                          labels = function(x) (x - med) / mad) +
       ylab(ylab) +
       theme_classic()
@@ -386,8 +402,8 @@ plotPredManifest <- function(post) {
   return(out)
 }
 
-# create butterfly plot
-plotButterfly <- function(phylo, iter, post, socNames) {
+# create butterfly plot with z-scores
+plotButterfly1 <- function(phylo, iter, post, socNames) {
   # create ultrametric maximum clade credibility tree
   cons <- phylo %>% mcc() %>% force.ultrametric()
   # get posterior eta value from particular model
@@ -454,7 +470,100 @@ plotButterfly <- function(phylo, iter, post, socNames) {
           legend.title = element_text(hjust = 0.5),
           plot.margin = margin(5, 5, 5, 0, unit = "mm"))
   out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
-  ggsave(out, filename = "figures/plotButterfly.pdf", width = 6, height = 7)
+  ggsave(out, filename = "figures/plotButterfly1.pdf", width = 6, height = 7)
+  return(out)
+}
+
+# create butterfly plot with pie charts
+plotButterfly2 <- function(phylo, iter, post, socNames, d) {
+  # create ultrametric maximum clade credibility tree
+  cons <- phylo %>% mcc() %>% force.ultrametric()
+  # get posterior eta value from particular model
+  getPostEta <- function(i, sampNode, var) {
+    # length of posterior samples from particular model
+    len <- dim(post$eta)[1] / length(iter)
+    # if node isn't included in particular model, return NAs
+    if (is.na(sampNode)) {
+      return(rep(NA, len))
+      # else return posterior samples
+    } else {
+      # get particular model number in sequence
+      modelNum <- which(iter == i)
+      # posterior samples to extract for particular model
+      sampStart <- (len * (modelNum - 1)) + 1
+      sampEnd   <- (len * modelNum)
+      return(post$eta[sampStart:sampEnd,sampNode,var])
+    }
+  }
+  # put together data
+  p <-
+    tibble(iter = iter) %>%
+    mutate(
+      # get consensus tree nodes (including tips)
+      node = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,1])),
+      # get all nodes in sampled tree that match consensus tree (including tips)
+      sampNode = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,2]))
+    ) %>%
+    unnest(c(node, sampNode)) %>%
+    # get trait values at node from posteriors of different models
+    mutate(polAuth = map2(iter, sampNode, getPostEta, var = 1),
+           relAuth = map2(iter, sampNode, getPostEta, var = 2)) %>%
+    unnest(c(polAuth, relAuth)) %>%
+    # summarise posterior for plot
+    group_by(node) %>%
+    summarise(polAuth = mean(polAuth, na.rm = TRUE),
+              relAuth = mean(relAuth, na.rm = TRUE)) %>%
+    # add median probabilities
+    mutate(polProb1Absent     = inv_logit(median(post$c1[,1]) - polAuth),
+           polProb2Sublocal   = inv_logit(median(post$c1[,2]) - polAuth) - polProb1Absent,
+           polProb3Local      = inv_logit(median(post$c1[,3]) - polAuth) - polProb2Sublocal,
+           polProb4Supralocal = 1 - polProb3Local,
+           relProb1Absent     = inv_logit(median(post$c2[,1]) - relAuth),
+           relProb2Sublocal   = inv_logit(median(post$c2[,2]) - relAuth) - relProb1Absent,
+           relProb3Local      = inv_logit(median(post$c2[,3]) - relAuth) - relProb2Sublocal,
+           relProb4Supralocal = 1 - relProb3Local) %>%
+    # match to data for plot
+    mutate(language = d$language[node]) %>%
+    left_join(d, by = "language") %>%
+    mutate(polAuth.y = ifelse(polAuth.y == 1, "Absent",
+                              ifelse(polAuth.y == 2, "Sublocal",
+                                     ifelse(polAuth.y == 3, "Local", "Supralocal"))),
+           polAuth.y = factor(polAuth.y, levels = c("Absent", "Sublocal", "Local", "Supralocal")),
+           relAuth.y = ifelse(relAuth.y == 1, "Absent",
+                              ifelse(relAuth.y == 2, "Sublocal",
+                                     ifelse(relAuth.y == 3, "Local", "Supralocal"))),
+           relAuth.y = factor(relAuth.y, levels = c("Absent", "Sublocal", "Local", "Supralocal")))
+  # get new society names for plot
+  cons$tip.label <- socNames$Society[match(cons$tip.label, socNames$Language)]
+  # get pie nodes
+  nPol <- nodepie(p[is.na(p$language),], cols = c("polProb1Absent", "polProb2Sublocal", 
+                                                  "polProb3Local", "polProb4Supralocal"))
+  nRel <- nodepie(p[is.na(p$language),], cols = c("relProb1Absent", "relProb2Sublocal", 
+                                                  "relProb3Local", "relProb4Supralocal"))
+  # create plots
+  pA <- 
+    ggtree(cons, right = TRUE, size = 0.1) %<+% drop_na(p) + 
+    geom_tippoint(aes(colour = relAuth.y)) +
+    geom_tiplab(size = 1.5, hjust = 0.5, offset = 1) +
+    scale_colour_discrete(name = "Religious\nauthority", 
+                          guide = guide_legend(label.position = "right")) +
+    theme(legend.position = c(0.1, 0.2),
+          legend.title = element_text(hjust = 0.35),
+          plot.margin = margin(5, 0, 5, 5, unit = "mm")) +
+    xlim(c(0, 6.5))
+  pA <- inset(pA, nRel, width = 0.12, height = 0.12, vjust = 0.3, hjust = 0.05)
+  pB <- 
+    ggtree(cons, right = TRUE, size = 0.1) %<+% drop_na(p) + 
+    geom_tippoint(aes(colour = polAuth.y)) +
+    scale_x_reverse() +
+    scale_colour_discrete(name = "Political\nauthority",
+                          guide = guide_legend(label.position = "left")) +
+    theme(legend.position = c(0.9, 0.2),
+          legend.title = element_text(hjust = 0.5),
+          plot.margin = margin(5, 5, 5, 0, unit = "mm"))
+  pB <- inset(pB, nPol, width = 0.115, height = 0.115, vjust = 0.3, hjust = -0.05, reverse_x = TRUE)
+  out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
+  ggsave(out, filename = "figures/plotButterfly2.pdf", width = 6, height = 7)
   return(out)
 }
 
@@ -605,4 +714,124 @@ plotSim <- function(simPost) {
 getPrior <- function(seed) {
   set.seed(seed)
   rnorm(200000, 0, 2)
+}
+
+# plot linguistic vs. geographic distance
+plotDistance <- function(d, phylo, lonLat) {
+  # get linguistic distances from maximum clade credibility tree
+  cons <- mcc(phylo)
+  lingDist <- cophenetic.phylo(cons)
+  # wrangle lonLat
+  lonLat <- 
+    lonLat %>%
+    # only languages in tree
+    filter(Language %in% cons$tip.label) %>%
+    # sort data to match phylogeny tips
+    arrange(match(Language, cons$tip.label))
+  # get geographic distances between longitude and latitude points
+  geoDist <- distm(cbind(lonLat$Longitude, lonLat$Latitude))
+  rownames(geoDist) <- colnames(geoDist) <- lonLat$Language
+  # plot
+  dist <-
+    tibble(
+      lingDist = lingDist[lower.tri(lingDist)],
+      geoDist = log(geoDist[lower.tri(geoDist)])
+    )
+  cor <- round(cor(dist$lingDist, dist$geoDist), 2)
+  out <-
+    ggplot(dist, aes(x = geoDist, y = lingDist)) +
+    geom_point(alpha = 0.2, size = 0.5) +
+    geom_smooth(method = "lm") +
+    labs(x = "Geographic distance (log)",
+         y = "Linguistic distance",
+         title = "Relationship between linguistic and geographic\ndistance across Austronesian societies",
+         subtitle = paste0("Correlation = ", cor)) +
+    theme_classic()
+  # save plot
+  ggsave(out, filename = "figures/plotDist.pdf", height = 5, width = 5)
+  return(out)
+}
+
+# initialise phylogenetic GLMM in brms
+getPhyloGLMMinitial <- function(d, phylo) {
+  # use first tree for initialisation
+  phylo <- phylo[[1]]
+  # get covariance matrix
+  A <- vcv.phylo(phylo, corr = TRUE)
+  # add variable for modelling
+  d$language2 <- d$language
+  # initialise model
+  bf1 <- bf(polAuth ~ 1 + (1 |a| gr(language, cov = A)) + (1 |b| language2)) + cumulative()
+  bf2 <- bf(relAuth ~ 1 + (1 |a| gr(language, cov = A)) + (1 |b| language2)) + cumulative()
+  brm(bf1 + bf2 + set_rescor(FALSE), data = d, data2 = list(A = A),
+      prior = c(prior(normal(0, 2), class = Intercept, resp = polAuth),
+                prior(normal(0, 2), class = Intercept, resp = relAuth),
+                prior(exponential(2), class = sd, resp = polAuth),
+                prior(exponential(2), class = sd, resp = relAuth),
+                prior(lkj(3), class = cor)),
+      chains = 0, seed = 2113, backend = "cmdstanr")
+}
+
+# fit phylogenetic GLMM in brms
+fitPhyloGLMM <- function(modelPhyloGLMM, phylo, iter) {
+  # loop over trees
+  phylo <- phylo[[iter]]
+  # get covariance matrix
+  A <- vcv.phylo(phylo, corr = TRUE)
+  # fit model
+  update(modelPhyloGLMM, data2 = list(A = A),
+         iter = 4000, chains = 1, cores = 1, seed = 2113,
+         backend = "cmdstanr")
+}
+
+# plot results of phylogenetic GLMM
+plotPhyloGLMM <- function(postPhyloGLMM) {
+  # set theme for both plots
+  plotTheme <-
+    theme_classic() +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          axis.line.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          strip.background = element_blank(),
+          strip.text.x = element_blank())
+  # phylogenetic correlation
+  pA <-
+    ggplot() +
+    geom_density(data = tibble(phyloCor = as.numeric(postPhyloGLMM[,,1])),
+                 aes(x = phyloCor), fill = "indianred", colour = "indianred") +
+    geom_pointinterval(data = tibble(median = median(postPhyloGLMM[,,1]),
+                                     lower = hdi(postPhyloGLMM[,,1])[,1],
+                                     upper = hdi(postPhyloGLMM[,,1])[,2],
+                                     y = 0), 
+                       aes(y = y, x = median, xmin = lower, xmax = upper),
+                       fatten_point = 3, size = 6) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    ylim(c(-0.5, 3.5)) +
+    xlim(c(-1, 1)) +
+    xlab("Phylogenetic correlation") +
+    plotTheme
+  # residual correlation
+  pB <-
+    ggplot() +
+    geom_density(data = tibble(residCor = as.numeric(postPhyloGLMM[,,2])),
+                 aes(x = residCor), fill = "grey", colour = "grey") +
+    geom_pointinterval(data = tibble(median = median(postPhyloGLMM[,,2]),
+                                     lower = hdi(postPhyloGLMM[,,2])[,1],
+                                     upper = hdi(postPhyloGLMM[,,2])[,2],
+                                     y = 0), 
+                       aes(y = y, x = median, xmin = lower, xmax = upper),
+                       fatten_point = 3, size = 6) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    ylim(c(-0.5, 3.5)) +
+    xlim(c(-1, 1)) +
+    xlab("Residual correlation") +
+    plotTheme
+  # put together
+  out <- plot_grid(pA, pB, nrow = 2)
+  # save
+  ggsave(out, filename = "figures/plotPhyloCor.pdf", width = 6, height = 4.5)
+  return(out)
 }

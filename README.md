@@ -9,9 +9,10 @@ Using novel phylogenetic methods to study the co-evolution of religious and poli
 To run this code, you will need to [install R](https://www.r-project.org/) and the following R packages:
 
 ```
-install.packages(c("ape", "bayestestR", "colorspace", "cowplot", "future", "future.callr", 
-                   "ggrepel", "ggtree", "phangorn", "phaseR", "phytools", "readxl", 
-                   "rstan", "targets", "tarchetypes", "tidyverse"))
+install.packages(c("ape", "bayestestR", "brms", "colorspace", "cowplot", 
+                   "geosphere", "ggrepel", "ggtree", "HDInterval", "phangorn", 
+                   "phaseR", "phytools", "readxl", "rethinking", "rstan", 
+                   "tidybayes", "tidyverse"))
 ```
 
 You will also require the `rethinking` package, which you can install with the following code (see [here](https://github.com/rmcelreath/rethinking) for more details):
