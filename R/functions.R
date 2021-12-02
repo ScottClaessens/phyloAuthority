@@ -110,7 +110,7 @@ getEquilibriumChange <- function(post) {
 }
 
 # plot change in equilibrium trait value
-plotEquilibriumChange <- function(df) {
+plotEquilibriumChange <- function(df, geo = FALSE) {
   # get facet labels
   dat_text <- tibble(
     label1 = c(expression(Rel %->% Pol), 
@@ -143,12 +143,12 @@ plotEquilibriumChange <- function(df) {
                        limits = c(-5, 15)) +
     ylab(NULL)
   # save plot
-  ggsave(out, filename = "figures/plotOU.pdf", width = 5, height = 5)
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotOU.pdf"), width = 5, height = 5)
   return(out)
 }
 
 # scatter plot of posterior median trait values for sample societies
-plotMedianTraitValues <- function(d, post, phylo) {
+plotMedianTraitValues <- function(d, post, phylo, geo = FALSE) {
   # extract median eta values for sample societies
   polAuth_median <- apply(post$eta[,1:97,1], 2, median)
   relAuth_median <- apply(post$eta[,1:97,2], 2, median)
@@ -166,12 +166,12 @@ plotMedianTraitValues <- function(d, post, phylo) {
     labs(y = "Religious authority (z-score)",
          x = "Political authority (z-score)")
   # save
-  ggsave(out, filename = "figures/plotMedTraitVals.pdf", width = 5, height = 5)
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotMedTraitVals.pdf"), width = 5, height = 5)
   return(out)
 }
 
 # flow field diagram of evolution
-plotFlowField <- function(post) {
+plotFlowField <- function(post, geo = FALSE) {
   # get distribution of latent variables among study societes
   median_polAuth <- median(apply(post$eta[,1:97,1], 2, median))
   median_relAuth <- median(apply(post$eta[,1:97,2], 2, median))
@@ -193,7 +193,8 @@ plotFlowField <- function(post) {
     list(dy)
   }
   # set up canvas
-  pdf("figures/plotPhasePlane.pdf", width = 6, height = 6, pointsize = 12)
+  pdf(paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotPhasePlane.pdf"), 
+      width = 6, height = 6, pointsize = 12)
   par(pty = "s")
   # create flow field diagram
   OU.flowField <- 
@@ -247,7 +248,7 @@ plotFlowField <- function(post) {
 }
 
 # make predictions for difference in trait values
-plotSelectionGradient <- function(post) {
+plotSelectionGradient <- function(post, geo = FALSE) {
   # get distribution of latent variables among study societes
   median_polAuth <- median(apply(post$eta[,1:97,1], 2, median))
   median_relAuth <- median(apply(post$eta[,1:97,2], 2, median))
@@ -312,13 +313,13 @@ plotSelectionGradient <- function(post) {
     ylab("Religious authority (z-score)") + 
     coord_fixed()
   # save plot
-  ggsave(filename = "figures/plotSelectionGradient.pdf", 
+  ggsave(filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotSelectionGradient.pdf"), 
          width = 6, height = 3.5, dpi = 600)
   return(out)
 }
 
 # plot predictions for manifest variables
-plotPredManifest <- function(post) {
+plotPredManifest <- function(post, geo = FALSE) {
   # get distribution of latent variables among study societes
   median_polAuth <- median(apply(post$eta[,1:97,1], 2, median))
   median_relAuth <- median(apply(post$eta[,1:97,2], 2, median))
@@ -366,6 +367,8 @@ plotPredManifest <- function(post) {
       scale_x_continuous(name = xlab, limits = (c(-2.5, 2.5)*mad) + med,
                          breaks = (c(-2.5, 0, 2.5)*mad) + med,
                          labels = function(x) (x - med) / mad) +
+      scale_fill_manual(values = c("#999999", "#F0E442", "#E69F00", "#D55E00")) +
+      scale_colour_manual(values = c("#999999", "#F0E442", "#E69F00", "#D55E00")) +
       ylab(ylab) +
       theme_classic()
   }
@@ -398,12 +401,13 @@ plotPredManifest <- function(post) {
                    nrow = 2)
   out <- plot_grid(out, get_legend(pA), nrow = 1, rel_widths = c(1, 0.25))
   # save
-  ggsave(out, filename = "figures/plotPred.pdf", height = 6, width = 7.5)
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotPred.pdf"), 
+         height = 6, width = 7.5)
   return(out)
 }
 
 # create butterfly plot with z-scores
-plotButterfly1 <- function(phylo, iter, post, socNames) {
+plotButterfly1 <- function(phylo, iter, post, socNames, geo = FALSE) {
   # create ultrametric maximum clade credibility tree
   cons <- phylo %>% mcc() %>% force.ultrametric()
   # get posterior eta value from particular model
@@ -470,12 +474,12 @@ plotButterfly1 <- function(phylo, iter, post, socNames) {
           legend.title = element_text(hjust = 0.5),
           plot.margin = margin(5, 5, 5, 0, unit = "mm"))
   out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
-  ggsave(out, filename = "figures/plotButterfly1.pdf", width = 6, height = 7)
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotButterfly1.pdf"), width = 6, height = 7)
   return(out)
 }
 
 # create butterfly plot with pie charts
-plotButterfly2 <- function(phylo, iter, post, socNames, d) {
+plotButterfly2 <- function(phylo, iter, post, socNames, d, geo = FALSE) {
   # create ultrametric maximum clade credibility tree
   cons <- phylo %>% mcc() %>% force.ultrametric()
   # get posterior eta value from particular model
@@ -536,17 +540,22 @@ plotButterfly2 <- function(phylo, iter, post, socNames, d) {
   # get new society names for plot
   cons$tip.label <- socNames$Society[match(cons$tip.label, socNames$Language)]
   # get pie nodes
-  nPol <- nodepie(p[is.na(p$language),], cols = c("polProb1Absent", "polProb2Sublocal", 
-                                                  "polProb3Local", "polProb4Supralocal"))
-  nRel <- nodepie(p[is.na(p$language),], cols = c("relProb1Absent", "relProb2Sublocal", 
-                                                  "relProb3Local", "relProb4Supralocal"))
+  nPol <- nodepie(p[is.na(p$language),], 
+                  cols = c("polProb1Absent", "polProb2Sublocal", 
+                           "polProb3Local", "polProb4Supralocal"),
+                  color = c("#999999", "#F0E442", "#E69F00", "#D55E00"))
+  nRel <- nodepie(p[is.na(p$language),], 
+                  cols = c("relProb1Absent", "relProb2Sublocal", 
+                           "relProb3Local", "relProb4Supralocal"),
+                  color = c("#999999", "#F0E442", "#E69F00", "#D55E00"))
   # create plots
   pA <- 
     ggtree(cons, right = TRUE, size = 0.1) %<+% drop_na(p) + 
     geom_tippoint(aes(colour = relAuth.y)) +
     geom_tiplab(size = 1.5, hjust = 0.5, offset = 1) +
-    scale_colour_discrete(name = "Religious\nauthority", 
-                          guide = guide_legend(label.position = "right")) +
+    scale_colour_manual(name = "Religious\nauthority", 
+                        guide = guide_legend(label.position = "right"),
+                        values = c("#999999", "#F0E442", "#E69F00", "#D55E00")) +
     theme(legend.position = c(0.1, 0.2),
           legend.title = element_text(hjust = 0.35),
           plot.margin = margin(5, 0, 5, 5, unit = "mm")) +
@@ -556,19 +565,20 @@ plotButterfly2 <- function(phylo, iter, post, socNames, d) {
     ggtree(cons, right = TRUE, size = 0.1) %<+% drop_na(p) + 
     geom_tippoint(aes(colour = polAuth.y)) +
     scale_x_reverse() +
-    scale_colour_discrete(name = "Political\nauthority",
-                          guide = guide_legend(label.position = "left")) +
+    scale_colour_manual(name = "Political\nauthority",
+                        guide = guide_legend(label.position = "left"),
+                        values = c("#999999", "#F0E442", "#E69F00", "#D55E00")) +
     theme(legend.position = c(0.9, 0.2),
           legend.title = element_text(hjust = 0.5),
           plot.margin = margin(5, 5, 5, 0, unit = "mm"))
   pB <- inset(pB, nPol, width = 0.115, height = 0.115, vjust = 0.3, hjust = -0.05, reverse_x = TRUE)
   out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
-  ggsave(out, filename = "figures/plotButterfly2.pdf", width = 6, height = 7)
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotButterfly2.pdf"), width = 6, height = 7)
   return(out)
 }
 
 # create traceplot for main parameters
-plotTrace <- function(post, numTrees, numChains) {
+plotTrace <- function(post, numTrees, numChains, geo = FALSE) {
   # number of iterations
   numIter <- dim(post$alpha_auto)[1] / numTrees
   # plot
@@ -605,7 +615,7 @@ plotTrace <- function(post, numTrees, numChains) {
     theme(strip.background = element_blank(),
           legend.position = "none")
   # save plot
-  ggsave(out, filename = "figures/plotTrace.pdf", 
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotTrace.pdf"), 
          width = 8, height = 5)
   return(out)
 }
@@ -748,7 +758,7 @@ plotDistance <- function(d, phylo, lonLat) {
          subtitle = paste0("Correlation = ", cor)) +
     theme_classic()
   # save plot
-  ggsave(out, filename = "figures/plotDist.pdf", height = 5, width = 5)
+  ggsave(out, filename = paste0("figures/plotDist.pdf"), height = 5, width = 5)
   return(out)
 }
 
@@ -834,4 +844,52 @@ plotPhyloGLMM <- function(postPhyloGLMM) {
   # save
   ggsave(out, filename = "figures/plotPhyloCor.pdf", width = 6, height = 4.5)
   return(out)
+}
+
+# fit OU stan model with geographic control
+fitOUModelGeo <- function(modelStan, d, phylo, iter, lonLat) {
+  # choose tree
+  tree <- phylo[[iter]]
+  # cut up tree into segments
+  times <- node.depth.edgelength(tree)
+  # line up date of each node with the split points in the tree
+  split_points <- sort(unique(times))
+  node_time <- match(times, split_points)
+  # create a sequence of nodes, respecting temporal order
+  node_seq <- seq(from = 1, to = length(node_time))
+  node_seq <- node_seq[order(node_time)]
+  # find the "parent" node for each node and tip of the tree
+  parent <- Ancestors(tree, node_seq, type = "parent")
+  # parent time indicates amount of time since the parent node
+  # scaled by the total depth of the tree
+  parent_time <- rep(NA, length(node_seq))
+  parent_time[1] <- -99 # placeholder for ancestral state
+  for (i in 2:length(parent_time)) {
+    parent_time[i] <- 
+      (node.depth.edgelength(tree)[node_seq[i]] - node.depth.edgelength(tree)[parent[i]]) / 
+      max(node.depth.edgelength(tree))
+  }
+  # get total num segments in the tree
+  N_seg <- length(node_seq)
+  # construct geographic distance matrix
+  d <- left_join(d, lonLat, by = c("language" = "Language"))
+  geo_dist <- distm(cbind(d$Longitude, d$Latitude))
+  geo_dist <- geo_dist / max(geo_dist)
+  # data list for stan
+  data_list <- list(
+    N_seg = N_seg,
+    node_seq = node_seq,
+    parent = parent,
+    ts = parent_time,
+    N = length(tree$tip.label),
+    J = 2,
+    y = cbind(d$polAuth, d$relAuth),
+    geo_dist = geo_dist
+  )
+  # fit model
+  fit <- sampling(modelStan, data = data_list, chains = 1,
+                  cores = 1, iter = 4000, init = "0",
+                  control = list(adapt_delta = 0.999),
+                  seed = 2113)
+  return(fit)
 }
