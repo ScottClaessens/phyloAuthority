@@ -621,7 +621,7 @@ plotTrace <- function(post, numTrees, numChains, geo = FALSE) {
 }
 
 # simulate data from generative OU model
-simOUData <- function(modelSimStan, phylo, iter) {
+simOUData <- function(modelSimStan, phylo, iter, output="trait_values") {
   # tree for simulation
   tree <- phylo[[iter]]
   # cut up tree into segments
@@ -658,6 +658,8 @@ simOUData <- function(modelSimStan, phylo, iter) {
   fit_sim <- sampling(modelSimStan, data = data_list, 
                       algorithm = "Fixed_param", 
                       chains = 100, iter = 1, seed = iter)
+  
+  if (output == "trait_values") {
   out <- extract.samples(fit_sim)$y[,,]
   # randomly select one data frame with all four authority levels for both vars
   set.seed(iter)
@@ -669,6 +671,12 @@ simOUData <- function(modelSimStan, phylo, iter) {
   out <- data.frame(language = tree$tip.label,
                     polAuth = out[,1],
                     relAuth = out[,2])
+  }
+  
+  if (output == "parameters") {
+    out <- extract.samples(fit_sim)
+  }
+  
   return(out)
 }
 
@@ -893,3 +901,30 @@ fitOUModelGeo <- function(modelStan, d, phylo, iter, lonLat) {
                   seed = 2113)
   return(fit)
 }
+
+
+# Simulate co-evolution of traits using Euler–Maruyama approximation for the system of stochastic differential equations
+SDE_sim <- function(init_eta=c(0,0), parameters, time_depth, time=500, accuracy=10) {
+  
+  # Accuracy refers to the accuracy of our simulation. The system is co-evolving in continuous time, but we'll approximate it with small discrete time steps. I set the default as 10 year time steps
+  n_times = time/accuracy
+  
+  # A matrix to hold our time series
+  eta = matrix(NA, nrow=n_times, ncol=2)
+  eta[1,] = init_eta
+  
+  A = parameters$A
+  b = parameters$b
+  G = parameters$G
+  
+  dt <- accuracy/time_depth
+  
+  for (t in 2:n_times) {
+    eta[t,] = eta[t-1,] + (A %*% eta[t-1,] + b)*dt + (G %*% rnorm(2, 0, 1))*dt
+  }
+  
+  return(eta)
+}
+
+
+
