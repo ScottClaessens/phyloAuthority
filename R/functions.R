@@ -407,7 +407,9 @@ plotPredManifest <- function(post, geo = FALSE) {
 }
 
 # create butterfly plot with z-scores
-plotButterfly1 <- function(phylo, iter, post, socNames, geo = FALSE) {
+plotButterfly <- function(phylo, iter, post, socNames, d, geo = FALSE) {
+  # to save memory, retain only parameters needed
+  post <- post[c("c1","c2","eta")]
   # create ultrametric maximum clade credibility tree
   cons <- phylo %>% mcc() %>% force.ultrametric()
   # get posterior eta value from particular model
@@ -437,95 +439,69 @@ plotButterfly1 <- function(phylo, iter, post, socNames, geo = FALSE) {
       sampNode = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,2]))
       ) %>%
     unnest(c(node, sampNode)) %>%
+    arrange(node) %>%
     # get trait values at node from posteriors of different models
     mutate(polAuth = map2(iter, sampNode, getPostEta, var = 1),
            relAuth = map2(iter, sampNode, getPostEta, var = 2)) %>%
-    unnest(c(polAuth, relAuth)) %>%
-    # summarise posterior for plot
-    group_by(node) %>%
-    summarise(polAuth = mean(polAuth, na.rm = TRUE),
-              relAuth = mean(relAuth, na.rm = TRUE))
-  # get new society names for plot
-  cons$tip.label <- socNames$Society[match(cons$tip.label, socNames$Language)]
-  # create plots
-  pA <- 
-    ggtree(cons, right = TRUE, size = 0.1) %<+% p + 
-    geom_nodepoint(aes(colour = scale(relAuth))) +
-    geom_tippoint(aes(colour = scale(relAuth))) +
-    geom_tiplab(size = 1.5, hjust = 0.5, offset = 1) +
-    scale_colour_continuous(name = "Religious\nauthority\n(z-score)",
-                            low = "#2d4963", high = "#75bdff",
-                            guide = guide_colourbar(ticks = FALSE,
-                                                    label.position = "right")) +
-    theme(legend.position = c(0.1, 0.2),
-          legend.title = element_text(hjust = 0.35),
-          plot.margin = margin(5, 0, 5, 5, unit = "mm")) +
-    xlim(c(0, 6.5))
-  pB <- 
-    ggtree(cons, right = TRUE, size = 0.1) %<+% p + 
-    geom_nodepoint(aes(colour = scale(polAuth))) +
-    geom_tippoint(aes(colour = scale(polAuth))) +
-    scale_x_reverse() +
-    scale_colour_continuous(name = "Political\nauthority\n(z-score)",
-                            low = "#632c29", high = "#ff7069",
-                            guide = guide_colourbar(ticks = FALSE,
-                                                    label.position = "left")) +
-    theme(legend.position = c(0.9, 0.2),
-          legend.title = element_text(hjust = 0.5),
-          plot.margin = margin(5, 5, 5, 0, unit = "mm"))
-  out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
-  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotButterfly1.pdf"), width = 6, height = 7)
-  return(out)
-}
-
-# create butterfly plot with pie charts
-plotButterfly2 <- function(phylo, iter, post, socNames, d, geo = FALSE) {
-  # create ultrametric maximum clade credibility tree
-  cons <- phylo %>% mcc() %>% force.ultrametric()
-  # get posterior eta value from particular model
-  getPostEta <- function(i, sampNode, var) {
-    # length of posterior samples from particular model
-    len <- dim(post$eta)[1] / length(iter)
-    # if node isn't included in particular model, return NAs
-    if (is.na(sampNode)) {
-      return(rep(NA, len))
-      # else return posterior samples
-    } else {
-      # get particular model number in sequence
-      modelNum <- which(iter == i)
-      # posterior samples to extract for particular model
-      sampStart <- (len * (modelNum - 1)) + 1
-      sampEnd   <- (len * modelNum)
-      return(post$eta[sampStart:sampEnd,sampNode,var])
-    }
+    unnest(c(polAuth, relAuth))
+  # save memory again
+  post <- post[c("c1","c2")]
+  # calculate probs
+  p$pol_probAbsent     <- inv_logit(post$c1[,1] - p$polAuth)
+  p$pol_probSublocal   <- inv_logit(post$c1[,2] - p$polAuth) - p$pol_probAbsent
+  p$pol_probLocal      <- inv_logit(post$c1[,3] - p$polAuth) - p$pol_probSublocal
+  p$pol_probSupralocal <- 1 - p$pol_probLocal
+  p$rel_probAbsent     <- inv_logit(post$c2[,1] - p$relAuth)
+  p$rel_probSublocal   <- inv_logit(post$c2[,2] - p$relAuth) - p$rel_probAbsent
+  p$rel_probLocal      <- inv_logit(post$c2[,3] - p$relAuth) - p$rel_probSublocal
+  p$rel_probSupralocal <- 1 - p$rel_probLocal
+  # density plot function
+  plotDens <- function(p, Node, var) {
+    # get fewer random samples to plot
+    set.seed(1)
+    samps <- sample(1:2e+05, 4000)
+    # plot
+    p %>%
+      group_by(node) %>%
+      slice(samps) %>%
+      ungroup() %>%
+      filter(node == Node) %>%
+      pivot_longer(cols = starts_with(paste0(var, "_")),
+                   names_to = "auth") %>%
+      mutate(auth = ifelse(str_detect(auth, "Absent"), "Absent",
+                           ifelse(str_detect(auth, "Sublocal"), "Sublocal",
+                                  ifelse(str_detect(auth, "Local"), "Local", "Supralocal"))),
+             auth = factor(auth, levels = c("Absent", "Sublocal", "Local", "Supralocal"))) %>%
+      ggplot(aes(x = value, fill = auth)) +
+      geom_density(alpha = 0.7) +
+      scale_fill_manual(name = "Authority level",
+                        values = c(c("#e9fafa", "#F0E442", "#E69F00", "#D55E00"))) +
+      scale_x_continuous(limits = c(-0.1, 1.1), breaks = c(0, 0.5, 1)) +
+      theme_classic() +
+      theme(legend.position = "bottom",
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.text.x = element_text(size = 8),
+            axis.ticks.y = element_blank(),
+            axis.line.y = element_blank())
   }
-  # put together data
+  # create density plots
+  polDens1 <- plotDens(p, Node = 98 , var = "pol")
+  polDens2 <- plotDens(p, Node = 102, var = "pol")
+  polDens3 <- plotDens(p, Node = 126, var = "pol")
+  polDens4 <- plotDens(p, Node = 130, var = "pol")
+  polDens5 <- plotDens(p, Node = 132, var = "pol")
+  relDens1 <- plotDens(p, Node = 98 , var = "rel")
+  relDens2 <- plotDens(p, Node = 102, var = "rel")
+  relDens3 <- plotDens(p, Node = 126, var = "rel")
+  relDens4 <- plotDens(p, Node = 130, var = "rel")
+  relDens5 <- plotDens(p, Node = 132, var = "rel")
+  # get mean trait values for trees
   p <-
-    tibble(iter = iter) %>%
-    mutate(
-      # get consensus tree nodes (including tips)
-      node = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,1])),
-      # get all nodes in sampled tree that match consensus tree (including tips)
-      sampNode = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,2]))
-    ) %>%
-    unnest(c(node, sampNode)) %>%
-    # get trait values at node from posteriors of different models
-    mutate(polAuth = map2(iter, sampNode, getPostEta, var = 1),
-           relAuth = map2(iter, sampNode, getPostEta, var = 2)) %>%
-    unnest(c(polAuth, relAuth)) %>%
-    # summarise posterior for plot
+    p %>%
     group_by(node) %>%
-    summarise(polAuth = mean(polAuth, na.rm = TRUE),
-              relAuth = mean(relAuth, na.rm = TRUE)) %>%
-    # add median probabilities
-    mutate(polProb1Absent     = inv_logit(median(post$c1[,1]) - polAuth),
-           polProb2Sublocal   = inv_logit(median(post$c1[,2]) - polAuth) - polProb1Absent,
-           polProb3Local      = inv_logit(median(post$c1[,3]) - polAuth) - polProb2Sublocal,
-           polProb4Supralocal = 1 - polProb3Local,
-           relProb1Absent     = inv_logit(median(post$c2[,1]) - relAuth),
-           relProb2Sublocal   = inv_logit(median(post$c2[,2]) - relAuth) - relProb1Absent,
-           relProb3Local      = inv_logit(median(post$c2[,3]) - relAuth) - relProb2Sublocal,
-           relProb4Supralocal = 1 - relProb3Local) %>%
+    summarise(polAuth = median(polAuth, na.rm = TRUE),
+              relAuth = median(relAuth, na.rm = TRUE)) %>%
     # match to data for plot
     mutate(language = d$language[node]) %>%
     left_join(d, by = "language") %>%
@@ -539,41 +515,69 @@ plotButterfly2 <- function(phylo, iter, post, socNames, d, geo = FALSE) {
            relAuth.y = factor(relAuth.y, levels = c("Absent", "Sublocal", "Local", "Supralocal")))
   # get new society names for plot
   cons$tip.label <- socNames$Society[match(cons$tip.label, socNames$Language)]
-  # get pie nodes
-  nPol <- nodepie(p[is.na(p$language),], 
-                  cols = c("polProb1Absent", "polProb2Sublocal", 
-                           "polProb3Local", "polProb4Supralocal"),
-                  color = c("#999999", "#F0E442", "#E69F00", "#D55E00"))
-  nRel <- nodepie(p[is.na(p$language),], 
-                  cols = c("relProb1Absent", "relProb2Sublocal", 
-                           "relProb3Local", "relProb4Supralocal"),
-                  color = c("#999999", "#F0E442", "#E69F00", "#D55E00"))
   # create plots
   pA <- 
-    ggtree(cons, right = TRUE, size = 0.1) %<+% drop_na(p) + 
-    geom_tippoint(aes(colour = relAuth.y)) +
-    geom_tiplab(size = 1.5, hjust = 0.5, offset = 1) +
-    scale_colour_manual(name = "Religious\nauthority", 
-                        guide = guide_legend(label.position = "right"),
-                        values = c("#999999", "#F0E442", "#E69F00", "#D55E00")) +
-    theme(legend.position = c(0.1, 0.2),
+    ggtree(cons, aes(colour = relAuth.x), right = TRUE, size = 0.4) %<+% p + 
+    geom_tiplab(colour = "black", alpha = 1, size = 1.5, hjust = 0.5, offset = 1) +
+    scale_colour_continuous(name = "Religious\nauthority",
+                            low = "gray99", high = "black", 
+                            breaks = -2:3, limits = c(-2.5, 4),
+                            guide = guide_colourbar(ticks = FALSE,
+                                                    label.position = "right")) +
+    ggnewscale::new_scale_color() +
+    geom_tippoint(aes(colour = relAuth.y), show.legend = FALSE) +
+    scale_colour_manual(values = c("#e9fafa", "#F0E442", "#E69F00", "#D55E00")) +
+    theme(legend.position = c(0.1, 0.08),
           legend.title = element_text(hjust = 0.35),
           plot.margin = margin(5, 0, 5, 5, unit = "mm")) +
     xlim(c(0, 6.5))
-  pA <- inset(pA, nRel, width = 0.12, height = 0.12, vjust = 0.3, hjust = 0.05)
   pB <- 
-    ggtree(cons, right = TRUE, size = 0.1) %<+% drop_na(p) + 
-    geom_tippoint(aes(colour = polAuth.y)) +
+    ggtree(cons, aes(colour = polAuth.x), right = TRUE, size = 0.4) %<+% p + 
     scale_x_reverse() +
-    scale_colour_manual(name = "Political\nauthority",
-                        guide = guide_legend(label.position = "left"),
-                        values = c("#999999", "#F0E442", "#E69F00", "#D55E00")) +
-    theme(legend.position = c(0.9, 0.2),
+    scale_colour_continuous(name = "Political\nauthority",
+                            low = "gray99", high = "black", 
+                            breaks = -2:3, limits = c(-2.5, 4),
+                            guide = guide_colourbar(ticks = FALSE,
+                                                    label.position = "left")) +
+    ggnewscale::new_scale_color() +
+    geom_tippoint(aes(colour = polAuth.y), show.legend = FALSE) +
+    scale_colour_manual(values = c("#e9fafa", "#F0E442", "#E69F00", "#D55E00")) +
+    theme(legend.position = c(0.9, 0.08),
           legend.title = element_text(hjust = 0.5),
           plot.margin = margin(5, 5, 5, 0, unit = "mm"))
-  pB <- inset(pB, nPol, width = 0.115, height = 0.115, vjust = 0.3, hjust = -0.05, reverse_x = TRUE)
+  # put together
+  leftCol <- plot_grid(relDens1 + theme(legend.position = "none"), 
+                       relDens2 + theme(legend.position = "none"), 
+                       relDens3 + theme(legend.position = "none"), 
+                       relDens4 + theme(legend.position = "none"), 
+                       relDens5 + theme(legend.position = "none"), 
+                       ncol = 1, labels = letters[1:5], label_size = 8,
+                       label_x = 0.1)
+  rightCol <- plot_grid(polDens1 + theme(legend.position = "none"), 
+                        polDens2 + theme(legend.position = "none"), 
+                        polDens3 + theme(legend.position = "none"), 
+                        polDens4 + theme(legend.position = "none"), 
+                        polDens5 + theme(legend.position = "none"), 
+                        ncol = 1, labels = letters[6:10], label_size = 8,
+                        label_x = 0.8)
   out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
-  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotButterfly2.pdf"), width = 6, height = 7)
+  out <- 
+    ggdraw(out) + 
+    draw_plot(leftCol, -0.01, 0.27, 0.13, 0.55) +
+    draw_plot(rightCol, 0.875, 0.27, 0.13, 0.55) +
+    # label nodes
+    draw_text("a", x = 0.05, y = 0.93,  size = 7) +
+    draw_text("b", x = 0.14, y = 0.85,  size = 7) +
+    draw_text("c", x = 0.17, y = 0.51,  size = 7) +
+    draw_text("d", x = 0.24, y = 0.237, size = 7) +
+    draw_text("e", x = 0.33, y = 0.20,  size = 7) +
+    draw_text("f", x = 0.96, y = 0.93,  size = 7) +
+    draw_text("g", x = 0.87, y = 0.85,  size = 7) +
+    draw_text("h", x = 0.83, y = 0.51,  size = 7) +
+    draw_text("i", x = 0.76, y = 0.237, size = 7) +
+    draw_text("j", x = 0.665, y = 0.20, size = 7)
+  out <- plot_grid(out, get_legend(polDens1), nrow = 2, rel_heights = c(1, 0.04))
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotButterfly.pdf"), width = 6.5, height = 7)
   return(out)
 }
 

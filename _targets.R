@@ -76,9 +76,8 @@ list(
   tar_target(plotOU3, plotFlowField(post)),
   tar_target(plotOU4, plotPredManifest(post)),
   tar_target(plotOU5, plotSelectionGradient(post)),
-  tar_target(plotOU6, plotButterfly1(phylo, iter, post, socNames)),
-  tar_target(plotOU7, plotButterfly2(phylo, iter, post, socNames, d)),
-  tar_target(plotOU8, plotTrace(post, numTrees, numChains = 4)),
+  tar_target(plotOU6, plotButterfly(phylo, iter, post, socNames, d)),
+  tar_target(plotOU7, plotTrace(post, numTrees, numChains = 4)),
   # plot model results with geographic control
   tar_target(deltaThetaGeo, getEquilibriumChange(postGeo)),
   tar_target(plotOUGeo1, plotEquilibriumChange(deltaThetaGeo, geo = TRUE)),
@@ -86,7 +85,6 @@ list(
   tar_target(plotOUGeo3, plotFlowField(postGeo, geo = TRUE)),
   tar_target(plotOUGeo4, plotPredManifest(postGeo, geo = TRUE)),
   tar_target(plotOUGeo5, plotSelectionGradient(postGeo, geo = TRUE)),
-  tar_target(plotOUGeo6, plotButterfly1(phylo, iter, postGeo, socNames, geo = TRUE)),
-  tar_target(plotOUGeo7, plotButterfly2(phylo, iter, postGeo, socNames, d, geo = TRUE)),
-  tar_target(plotOUGeo8, plotTrace(postGeo, numTrees, numChains = 4, geo = TRUE))
+  tar_target(plotOUGeo6, plotButterfly(phylo, iter, postGeo, socNames, d, geo = TRUE)),
+  tar_target(plotOUGeo7, plotTrace(postGeo, numTrees, numChains = 4, geo = TRUE))
 )
