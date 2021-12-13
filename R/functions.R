@@ -906,29 +906,96 @@ fitOUModelGeo <- function(modelStan, d, phylo, iter, lonLat) {
   return(fit)
 }
 
-
-# Simulate co-evolution of traits using Euler–Maruyama approximation for the system of stochastic differential equations
-SDE_sim <- function(init_eta=c(0,0), parameters, time_depth, time=500, accuracy=10) {
-  
-  # Accuracy refers to the accuracy of our simulation. The system is co-evolving in continuous time, but we'll approximate it with small discrete time steps. I set the default as 10 year time steps
-  n_times = time/accuracy
-  
-  # A matrix to hold our time series
-  eta = matrix(NA, nrow=n_times, ncol=2)
-  eta[1,] = init_eta
-  
-  A = parameters$A
-  b = parameters$b
-  G = parameters$G
-  
-  dt <- accuracy/time_depth
-  
+# Simulate co-evolution of traits using Euler Maruyama approximation for the system of stochastic differential equations
+SDE_sim <- function(init_eta = c(0, 0), parameters, time_depth, time = 500, accuracy = 10) {
+  # accuracy refers to the accuracy of our simulation. The system is co-evolving in continuous time,
+  # but we'll approximate it with small discrete time steps. I set the default as 10 year time steps
+  n_times <- time / accuracy
+  # matrix to hold our time series
+  eta <- matrix(NA, nrow = n_times, ncol = 2)
+  eta[1,] <- init_eta
+  # parameters
+  A <- parameters$A
+  b <- parameters$b
+  G <- parameters$G
+  # dt
+  dt <- accuracy / time_depth
+  # simulate
   for (t in 2:n_times) {
-    eta[t,] = eta[t-1,] + (A %*% eta[t-1,] + b)*dt + (G %*% rnorm(2, 0, 1))*dt
+    eta[t,] <- eta[t-1,] + (A %*% eta[t-1,] + b)*dt + (G %*% rnorm(2, 0, 1))*dt
   }
-  
-  return(eta)
+  out <- tibble(time = 1:n_times, polAuth = eta[,1], relAuth = eta[,2])
+  return(out)
 }
 
-
-
+# run SDE simulation
+runSDEsim <- function(phylo, iter, post, geo = FALSE) {
+  # to save memory
+  post <- post[c("A", "b", "Q")]
+  # simulate co-evolution over a 2000 year period, given some starting values for eta
+  plotFun <- function(etaStart) {
+    d <-
+      tibble(i = iter) %>%
+      mutate(
+        # phylogeny
+        phylo = purrr::map(i, function(x) phylo[[x]]),
+        # depth of phylogeny, which we'll need to scale our dt values
+        time_depth = purrr::map(phylo, function(x) max(node.depth.edgelength(x)) * 1000),
+        # sample 10 parameter values from posterior for each of 100 trees = 1000 sims
+        postSamples = purrr::map(i, function(x) seq(
+          from = (2000*(which(iter==x)-1)) + 1,
+          to = 2000*(which(iter==x))
+        ) %>% sample(10))
+      ) %>%
+      unnest(c(postSamples)) %>%
+      mutate(
+        eta = purrr::map2(time_depth, postSamples, function(x, y) SDE_sim(
+          init_eta = c(etaStart, etaStart), 
+          parameters = list(A = post$A[y,,], b = post$b[y,], G = t(chol(post$Q[y,,]))),
+          time_depth = x, time = 2000))
+      ) %>%
+      unnest(c(eta)) %>%
+      rename(`Political authority` = polAuth,
+             `Religious authority` = relAuth) %>%
+      pivot_longer(cols = c(`Political authority`, `Religious authority`)) %>%
+      group_by(time, name) %>%
+      summarise(
+        med = median(value),
+        low = quantile(value, 0.025),
+        upp = quantile(value, 0.975)
+      ) %>%
+      ggplot(aes(x = time*10, y = med, ymin = low, ymax = upp, fill = name)) +
+      geom_ribbon(alpha = 0.2) +
+      geom_line(aes(colour = name)) +
+      labs(x = "Time in years", y = "Trait value (raw latent scale)") +
+      ggtitle(paste0("Start = ", etaStart)) +
+      theme_classic() +
+      theme(legend.title = element_blank())
+  }
+  # individual plots
+  pA <- plotFun(-2)
+  pB <- plotFun(-1)
+  pC <- plotFun(0)
+  pD <- plotFun(1)
+  pE <- plotFun(2)
+  pF <- plotFun(3)
+  pG <- plotFun(4)
+  pH <- plotFun(5)
+  pI <- plotFun(6)
+  # put together
+  out <- plot_grid(pA + theme(legend.position = "none"), 
+                   pB + theme(legend.position = "none"), 
+                   pC + theme(legend.position = "none"), 
+                   pD + theme(legend.position = "none"), 
+                   pE + theme(legend.position = "none"), 
+                   pF + theme(legend.position = "none"), 
+                   pG + theme(legend.position = "none"), 
+                   pH + theme(legend.position = "none"), 
+                   pI + theme(legend.position = "none"), 
+                   nrow = 3, labels = letters[1:9], align = "vh")
+  out <- plot_grid(out, get_legend(pA), rel_widths = c(1, 0.2))
+  # save
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotSDEsim.pdf"),
+         height = 8, width = 8)
+  return(out)
+}
