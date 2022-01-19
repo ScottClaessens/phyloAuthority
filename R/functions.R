@@ -125,9 +125,9 @@ plotEquilibriumChange <- function(df, geo = FALSE) {
     geom_density(aes(fill = resp, colour = resp), alpha = 0.5) + 
     geom_vline(xintercept = 0, colour = "indianred", linetype = 'dashed', lwd = 1) +
     facet_wrap(resp ~ ., nrow = 2) +
-    geom_text(data = dat_text, aes(x = 7.5, y = 0.15, label = label1, colour = resp), 
+    geom_text(data = dat_text, aes(x = 6.5, y = 0.15, label = label1, colour = resp), 
               size = 4.5, parse = TRUE) +
-    geom_text(data = dat_text, aes(x = 7.5, y = 0.12, label = label2, colour = resp), 
+    geom_text(data = dat_text, aes(x = 6.5, y = 0.12, label = label2, colour = resp), 
               size = 4.5) +
     scale_fill_manual(values = c("#5387b6","#c55852")) +
     scale_colour_manual(values = c("#5387b6","#c55852")) +
@@ -142,6 +142,22 @@ plotEquilibriumChange <- function(df, geo = FALSE) {
     scale_x_continuous(name = expression(paste(Delta, theta)["z"]), 
                        limits = c(-5, 15)) +
     ylab(NULL)
+  # inset plot
+  inset <-
+    tibble(diff = df$delta_theta[df$resp == "polAuth"] - df$delta_theta[df$resp == "relAuth"]) %>%
+    ggplot(aes(x = diff)) +
+    geom_density(fill = "lightgrey", outline.type = "both") +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    scale_x_continuous(name = "Difference", limits = c(-15, 15)) +
+    theme_classic() +
+    theme(axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.y = element_blank(),
+          axis.line = element_blank())
+  # add to plot
+  out <-
+    ggdraw(out) +
+    draw_plot(inset, .685, .735, .29, .24)
   # save plot
   ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotOU.pdf"), width = 5, height = 5)
   return(out)
@@ -446,57 +462,7 @@ plotButterfly <- function(phylo, iter, post, socNames, d, geo = FALSE) {
     unnest(c(polAuth, relAuth))
   # save memory again
   post <- post[c("c1","c2")]
-  # calculate probs
-  p$pol_probAbsent     <- inv_logit(post$c1[,1] - p$polAuth)
-  p$pol_probSublocal   <- inv_logit(post$c1[,2] - p$polAuth) - p$pol_probAbsent
-  p$pol_probLocal      <- inv_logit(post$c1[,3] - p$polAuth) - p$pol_probSublocal
-  p$pol_probSupralocal <- 1 - p$pol_probLocal
-  p$rel_probAbsent     <- inv_logit(post$c2[,1] - p$relAuth)
-  p$rel_probSublocal   <- inv_logit(post$c2[,2] - p$relAuth) - p$rel_probAbsent
-  p$rel_probLocal      <- inv_logit(post$c2[,3] - p$relAuth) - p$rel_probSublocal
-  p$rel_probSupralocal <- 1 - p$rel_probLocal
-  # density plot function
-  plotDens <- function(p, Node, var) {
-    # get fewer random samples to plot
-    set.seed(1)
-    samps <- sample(1:2e+05, 4000)
-    # plot
-    p %>%
-      group_by(node) %>%
-      slice(samps) %>%
-      ungroup() %>%
-      filter(node == Node) %>%
-      pivot_longer(cols = starts_with(paste0(var, "_")),
-                   names_to = "auth") %>%
-      mutate(auth = ifelse(str_detect(auth, "Absent"), "Absent",
-                           ifelse(str_detect(auth, "Sublocal"), "Sublocal",
-                                  ifelse(str_detect(auth, "Local"), "Local", "Supralocal"))),
-             auth = factor(auth, levels = c("Absent", "Sublocal", "Local", "Supralocal"))) %>%
-      ggplot(aes(x = value, fill = auth)) +
-      geom_density(alpha = 0.7) +
-      scale_fill_manual(name = "Authority level",
-                        values = c(c("#e9fafa", "#F0E442", "#E69F00", "#D55E00"))) +
-      scale_x_continuous(limits = c(-0.1, 1.1), breaks = c(0, 0.5, 1)) +
-      theme_classic() +
-      theme(legend.position = "bottom",
-            axis.title = element_blank(),
-            axis.text.y = element_blank(),
-            axis.text.x = element_text(size = 8),
-            axis.ticks.y = element_blank(),
-            axis.line.y = element_blank())
-  }
-  # create density plots
-  polDens1 <- plotDens(p, Node = 98 , var = "pol")
-  polDens2 <- plotDens(p, Node = 102, var = "pol")
-  polDens3 <- plotDens(p, Node = 126, var = "pol")
-  polDens4 <- plotDens(p, Node = 130, var = "pol")
-  polDens5 <- plotDens(p, Node = 132, var = "pol")
-  relDens1 <- plotDens(p, Node = 98 , var = "rel")
-  relDens2 <- plotDens(p, Node = 102, var = "rel")
-  relDens3 <- plotDens(p, Node = 126, var = "rel")
-  relDens4 <- plotDens(p, Node = 130, var = "rel")
-  relDens5 <- plotDens(p, Node = 132, var = "rel")
-  # get mean trait values for trees
+  # get median trait values for trees
   p <-
     p %>%
     group_by(node) %>%
@@ -512,7 +478,18 @@ plotButterfly <- function(phylo, iter, post, socNames, d, geo = FALSE) {
            relAuth.y = ifelse(relAuth.y == 1, "Absent",
                               ifelse(relAuth.y == 2, "Sublocal",
                                      ifelse(relAuth.y == 3, "Local", "Supralocal"))),
-           relAuth.y = factor(relAuth.y, levels = c("Absent", "Sublocal", "Local", "Supralocal")))
+           relAuth.y = factor(relAuth.y, levels = c("Absent", "Sublocal", "Local", "Supralocal"))) %>%
+    # get median probabilites
+    mutate(
+      pol_probAbsent     = inv_logit(median(post$c1[,1]) - polAuth.x),
+      pol_probSublocal   = inv_logit(median(post$c1[,2]) - polAuth.x) - inv_logit(median(post$c1[,1]) - polAuth.x),
+      pol_probLocal      = inv_logit(median(post$c1[,3]) - polAuth.x) - inv_logit(median(post$c1[,2]) - polAuth.x),
+      pol_probSupralocal = 1 - inv_logit(median(post$c1[,3]) - polAuth.x),
+      rel_probAbsent     = inv_logit(median(post$c2[,1]) - relAuth.x),
+      rel_probSublocal   = inv_logit(median(post$c2[,2]) - relAuth.x) - inv_logit(median(post$c2[,1]) - relAuth.x),
+      rel_probLocal      = inv_logit(median(post$c2[,3]) - relAuth.x) - inv_logit(median(post$c2[,2]) - relAuth.x),
+      rel_probSupralocal = 1 - inv_logit(median(post$c2[,3]) - relAuth.x)
+    )
   # get new society names for plot
   cons$tip.label <- socNames$Society[match(cons$tip.label, socNames$Language)]
   # create plots
@@ -545,38 +522,56 @@ plotButterfly <- function(phylo, iter, post, socNames, d, geo = FALSE) {
     theme(legend.position = c(0.9, 0.08),
           legend.title = element_text(hjust = 0.5),
           plot.margin = margin(5, 5, 5, 0, unit = "mm"))
+  # add pie charts
+  pA <-
+    p %>%
+    filter(node %in% c(98, 102, 126, 130, 132)) %>%
+    select(node, starts_with("rel_")) %>%
+    rename(p1 = rel_probAbsent,
+           p2 = rel_probSublocal,
+           p3 = rel_probLocal,
+           p4 = rel_probSupralocal) %>%
+    nodepie(cols = 2:5, color = c("#e9fafa", "#F0E442","#E69F00", "#D55E00")) %>%
+    inset(pA, insets = ., height = 0.15, width = 0.15)
+  pB <-
+    p %>%
+    filter(node %in% c(98, 102, 126, 130, 132)) %>%
+    select(node, starts_with("pol_")) %>%
+    rename(p1 = pol_probAbsent,
+           p2 = pol_probSublocal,
+           p3 = pol_probLocal,
+           p4 = pol_probSupralocal) %>%
+    nodepie(cols = 2:5, color = c("#e9fafa", "#F0E442","#E69F00", "#D55E00")) %>%
+    inset(pB, insets = ., height = 0.15, width = 0.15, reverse_x = TRUE)
   # put together
-  leftCol <- plot_grid(relDens1 + theme(legend.position = "none"), 
-                       relDens2 + theme(legend.position = "none"), 
-                       relDens3 + theme(legend.position = "none"), 
-                       relDens4 + theme(legend.position = "none"), 
-                       relDens5 + theme(legend.position = "none"), 
-                       ncol = 1, labels = letters[1:5], label_size = 8,
-                       label_x = 0.1)
-  rightCol <- plot_grid(polDens1 + theme(legend.position = "none"), 
-                        polDens2 + theme(legend.position = "none"), 
-                        polDens3 + theme(legend.position = "none"), 
-                        polDens4 + theme(legend.position = "none"), 
-                        polDens5 + theme(legend.position = "none"), 
-                        ncol = 1, labels = letters[6:10], label_size = 8,
-                        label_x = 0.8)
   out <- plot_grid(pA, pB, nrow = 1, rel_widths = c(1, 0.85))
   out <- 
     ggdraw(out) + 
-    draw_plot(leftCol, -0.01, 0.27, 0.13, 0.55) +
-    draw_plot(rightCol, 0.875, 0.27, 0.13, 0.55) +
     # label nodes
-    draw_text("a", x = 0.05, y = 0.93,  size = 7) +
-    draw_text("b", x = 0.14, y = 0.85,  size = 7) +
+    draw_text("a", x = 0.045, y = 0.93,  size = 7) +
+    draw_text("b", x = 0.135, y = 0.85,  size = 7) +
     draw_text("c", x = 0.17, y = 0.51,  size = 7) +
-    draw_text("d", x = 0.24, y = 0.237, size = 7) +
-    draw_text("e", x = 0.33, y = 0.20,  size = 7) +
-    draw_text("f", x = 0.96, y = 0.93,  size = 7) +
-    draw_text("g", x = 0.87, y = 0.85,  size = 7) +
-    draw_text("h", x = 0.83, y = 0.51,  size = 7) +
-    draw_text("i", x = 0.76, y = 0.237, size = 7) +
-    draw_text("j", x = 0.665, y = 0.20, size = 7)
-  out <- plot_grid(out, get_legend(polDens1), nrow = 2, rel_heights = c(1, 0.04))
+    draw_text("d", x = 0.235, y = 0.237, size = 7) +
+    draw_text("e", x = 0.325, y = 0.20,  size = 7) +
+    draw_text("a", x = 0.968, y = 0.93,  size = 7) +
+    draw_text("b", x = 0.878, y = 0.85,  size = 7) +
+    draw_text("c", x = 0.835, y = 0.507,  size = 7) +
+    draw_text("d", x = 0.773, y = 0.237, size = 7) +
+    draw_text("e", x = 0.675, y = 0.204, size = 7)
+  # add legend
+  legend <- get_legend(
+    p %>%
+      pivot_longer(cols = starts_with("pol_"),
+                   names_to = "Authority level") %>%
+      mutate(`Authority level` = str_remove(`Authority level`, "pol_prob"),
+             `Authority level` = factor(`Authority level`, levels = c("Absent", "Sublocal", "Local", "Supralocal"))) %>%
+      ggplot(aes(x = value, fill = `Authority level`)) +
+      geom_density() +
+      scale_fill_manual(values = c("#e9fafa", "#F0E442","#E69F00", "#D55E00")) +
+      theme(legend.direction = "horizontal")
+  )
+  out <- plot_grid(out, legend, nrow = 2, rel_heights = c(1, 0.04))
+  # save
   ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotButterfly.pdf"), width = 6.5, height = 7)
   return(out)
 }
@@ -997,5 +992,136 @@ runSDEsim <- function(phylo, iter, post, geo = FALSE) {
   # save
   ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotSDEsim.pdf"),
          height = 8, width = 8)
+  return(out)
+}
+
+# plot densities for particular ancestral nodes
+# code adapted from plotButterfly() function
+plotAncestralDens <- function(phylo, iter, post, socNames, d, geo = FALSE) {
+  # to save memory, retain only parameters needed
+  post <- post[c("c1","c2","eta")]
+  # create ultrametric maximum clade credibility tree
+  cons <- phylo %>% mcc() %>% force.ultrametric()
+  # get posterior eta value from particular model
+  getPostEta <- function(i, sampNode, var) {
+    # length of posterior samples from particular model
+    len <- dim(post$eta)[1] / length(iter)
+    # if node isn't included in particular model, return NAs
+    if (is.na(sampNode)) {
+      return(rep(NA, len))
+      # else return posterior samples
+    } else {
+      # get particular model number in sequence
+      modelNum <- which(iter == i)
+      # posterior samples to extract for particular model
+      sampStart <- (len * (modelNum - 1)) + 1
+      sampEnd   <- (len * modelNum)
+      return(post$eta[sampStart:sampEnd,sampNode,var])
+    }
+  }
+  # put together data
+  p <-
+    tibble(iter = iter) %>%
+    mutate(
+      # get consensus tree nodes (including tips)
+      node = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,1])),
+      # get all nodes in sampled tree that match consensus tree (including tips)
+      sampNode = purrr::map(iter, function(x) c(1:97, matchNodes(cons, phylo[[x]])[,2]))
+    ) %>%
+    unnest(c(node, sampNode)) %>%
+    arrange(node) %>%
+    # get trait values at node from posteriors of different models
+    mutate(polAuth = map2(iter, sampNode, getPostEta, var = 1),
+           relAuth = map2(iter, sampNode, getPostEta, var = 2)) %>%
+    unnest(c(polAuth, relAuth))
+  # save memory again
+  post <- post[c("c1","c2")]
+  # calculate probs
+  p$pol_probAbsent     <- inv_logit(post$c1[,1] - p$polAuth)
+  p$pol_probSublocal   <- inv_logit(post$c1[,2] - p$polAuth) - inv_logit(post$c1[,1] - p$polAuth)
+  p$pol_probLocal      <- inv_logit(post$c1[,3] - p$polAuth) - inv_logit(post$c1[,2] - p$polAuth)
+  p$pol_probSupralocal <- 1 - inv_logit(post$c1[,3] - p$polAuth)
+  p$rel_probAbsent     <- inv_logit(post$c2[,1] - p$relAuth)
+  p$rel_probSublocal   <- inv_logit(post$c2[,2] - p$relAuth) - inv_logit(post$c2[,1] - p$relAuth)
+  p$rel_probLocal      <- inv_logit(post$c2[,3] - p$relAuth) - inv_logit(post$c2[,2] - p$relAuth)
+  p$rel_probSupralocal <- 1 - inv_logit(post$c2[,3] - p$relAuth)
+  # density plot function
+  plotDens <- function(p, Node, var) {
+    # get fewer random samples to plot
+    set.seed(1)
+    samps <- sample(1:2e+05, 4000)
+    # plot
+    p %>%
+      group_by(node) %>%
+      slice(samps) %>%
+      ungroup() %>%
+      filter(node == Node) %>%
+      pivot_longer(cols = starts_with(paste0(var, "_")),
+                   names_to = "auth") %>%
+      mutate(auth = ifelse(str_detect(auth, "Absent"), "Absent",
+                           ifelse(str_detect(auth, "Sublocal"), "Sublocal",
+                                  ifelse(str_detect(auth, "Local"), "Local", "Supralocal"))),
+             auth = factor(auth, levels = c("Absent", "Sublocal", "Local", "Supralocal"))) %>%
+      ggplot(aes(x = value, fill = auth)) +
+      geom_density(alpha = 0.7, outline.type = "full") +
+      scale_fill_manual(name = "Authority level",
+                        values = c(c("#e9fafa", "#F0E442", "#E69F00", "#D55E00"))) +
+      scale_x_continuous(limits = c(-0.1, 1.1), breaks = c(0, 0.5, 1)) +
+      theme_classic() +
+      theme(legend.position = "bottom",
+            axis.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.text.x = element_text(size = 8),
+            axis.ticks = element_blank(),
+            axis.line = element_blank())
+  }
+  # create density plots
+  polDens1 <- plotDens(p, Node = 98 , var = "pol")
+  polDens2 <- plotDens(p, Node = 102, var = "pol")
+  polDens3 <- plotDens(p, Node = 126, var = "pol")
+  polDens4 <- plotDens(p, Node = 130, var = "pol")
+  polDens5 <- plotDens(p, Node = 132, var = "pol")
+  relDens1 <- plotDens(p, Node = 98 , var = "rel")
+  relDens2 <- plotDens(p, Node = 102, var = "rel")
+  relDens3 <- plotDens(p, Node = 126, var = "rel")
+  relDens4 <- plotDens(p, Node = 130, var = "rel")
+  relDens5 <- plotDens(p, Node = 132, var = "rel")
+  # labels
+  label1 <- ggdraw() + draw_text("Political authority")
+  label2 <- ggdraw() + draw_text("Religious authority")
+  label3 <- ggdraw() + draw_text(angle = 90, size = 8, text = "Proto-\nAustronesian")
+  label4 <- ggdraw() + draw_text(angle = 90, size = 8, text = "Proto-\nMalayo-Polynesian")
+  label5 <- ggdraw() + draw_text(angle = 90, size = 8, text = "Proto-\nOceanic")
+  label6 <- ggdraw() + draw_text(angle = 90, size = 8, text = "Proto-\nCentral-Pacific")
+  label7 <- ggdraw() + draw_text(angle = 90, size = 8, text = "Proto-\nPolynesian")
+  # put together
+  out <-
+    plot_grid(
+      plot_grid(NULL, label1, label2, nrow = 1, rel_widths = c(0.15, 1, 1)),
+      plot_grid(label3, 
+                polDens1 + theme(legend.position = "none"), 
+                relDens1 + theme(legend.position = "none"), 
+                nrow = 1, rel_widths = c(0.15, 1, 1)),
+      plot_grid(label4, 
+                polDens2 + theme(legend.position = "none"), 
+                relDens2 + theme(legend.position = "none"), 
+                nrow = 1, rel_widths = c(0.15, 1, 1)),
+      plot_grid(label5, 
+                polDens3 + theme(legend.position = "none"), 
+                relDens3 + theme(legend.position = "none"), 
+                nrow = 1, rel_widths = c(0.15, 1, 1)),
+      plot_grid(label6, 
+                polDens4 + theme(legend.position = "none"), 
+                relDens4 + theme(legend.position = "none"), 
+                nrow = 1, rel_widths = c(0.15, 1, 1)),
+      plot_grid(label7, 
+                polDens5 + theme(legend.position = "none"), 
+                relDens5 + theme(legend.position = "none"), 
+                nrow = 1, rel_widths = c(0.15, 1, 1)),
+      plot_grid(get_legend(polDens1)),
+      nrow = 7, rel_heights = c(0.3, 1, 1, 1, 1, 1, 0.4)
+    )
+  # save
+  ggsave(out, filename = paste0("figures/ouModel", ifelse(geo, "WithGeographicControl", ""), "/plotAncestralDens.pdf"), width = 5.5, height = 5.5)
   return(out)
 }

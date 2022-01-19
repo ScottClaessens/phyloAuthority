@@ -79,6 +79,7 @@ list(
   tar_target(plotOU6, plotButterfly(phylo, iter, post, socNames, d)),
   tar_target(plotOU7, plotTrace(post, numTrees, numChains = 4)),
   tar_target(plotOU8, runSDEsim(phylo, iter, post)),
+  tar_target(plotOU9, plotAncestralDens(phylo, iter, post, socNames, d)),
   # plot model results with geographic control
   tar_target(deltaThetaGeo, getEquilibriumChange(postGeo)),
   tar_target(plotOUGeo1, plotEquilibriumChange(deltaThetaGeo, geo = TRUE)),
@@ -88,5 +89,6 @@ list(
   tar_target(plotOUGeo5, plotSelectionGradient(postGeo, geo = TRUE)),
   tar_target(plotOUGeo6, plotButterfly(phylo, iter, postGeo, socNames, d, geo = TRUE)),
   tar_target(plotOUGeo7, plotTrace(postGeo, numTrees, numChains = 4, geo = TRUE)),
-  tar_target(plotOUGeo8, runSDEsim(phylo, iter, postGeo, geo = TRUE))
+  tar_target(plotOUGeo8, runSDEsim(phylo, iter, postGeo, geo = TRUE)),
+  tar_target(plotOUGeo9, plotAncestralDens(phylo, iter, postGeo, socNames, d, geo = TRUE))
 )
