@@ -34,8 +34,9 @@ list(
   tar_target(phyloGLMMind, fitPhyloGLMM(modelPhyloGLMM, phylo, iter),
              pattern = map(iter), iteration = "list"),
   tar_target(phyloGLMM, combine_models(mlist = phyloGLMMind, check_data = FALSE)),
-  tar_target(postPhyloGLMM, as_draws_array(phyloGLMM, variable = "^cor_", regex = TRUE)),
+  tar_target(postPhyloGLMM, as_draws_array(phyloGLMM, variable = "^cor_|^sd_", regex = TRUE)),
   tar_target(plotPhyloCor, plotPhyloGLMM(postPhyloGLMM)),
+  tar_target(plotPhyloSig, plotPhyloSignal(postPhyloGLMM)),
   # simulate OU stan model
   tar_target(fileSimStan, "stan/OU_sim_phy_ordinal.stan", format = "file"),
   tar_target(modelSimStan, stan_model(fileSimStan)),

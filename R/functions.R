@@ -318,7 +318,7 @@ plotSelectionGradient <- function(post, geo = FALSE) {
     scale_x_continuous(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
     scale_fill_continuous_divergingx(palette = "Geyser", trans = "reverse", 
-                                     guide = guide_legend(reverse = TRUE)) + 
+                                     guide = guide_colourbar(reverse = TRUE)) + 
     theme_bw(base_size = 14) +
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
@@ -817,11 +817,11 @@ plotPhyloGLMM <- function(postPhyloGLMM) {
   # phylogenetic correlation
   pA <-
     ggplot() +
-    geom_density(data = tibble(phyloCor = as.numeric(postPhyloGLMM[,,1])),
+    geom_density(data = tibble(phyloCor = as.numeric(postPhyloGLMM[,,"cor_language__polAuth_Intercept__relAuth_Intercept"])),
                  aes(x = phyloCor), fill = "indianred", colour = "indianred") +
-    geom_pointinterval(data = tibble(median = median(postPhyloGLMM[,,1]),
-                                     lower = hdi(postPhyloGLMM[,,1])[,1],
-                                     upper = hdi(postPhyloGLMM[,,1])[,2],
+    geom_pointinterval(data = tibble(median = median(postPhyloGLMM[,,"cor_language__polAuth_Intercept__relAuth_Intercept"]),
+                                     lower = HDInterval::hdi(postPhyloGLMM[,,"cor_language__polAuth_Intercept__relAuth_Intercept"])[1],
+                                     upper = HDInterval::hdi(postPhyloGLMM[,,"cor_language__polAuth_Intercept__relAuth_Intercept"])[2],
                                      y = 0), 
                        aes(y = y, x = median, xmin = lower, xmax = upper),
                        fatten_point = 3, size = 6) +
@@ -833,11 +833,11 @@ plotPhyloGLMM <- function(postPhyloGLMM) {
   # residual correlation
   pB <-
     ggplot() +
-    geom_density(data = tibble(residCor = as.numeric(postPhyloGLMM[,,2])),
+    geom_density(data = tibble(residCor = as.numeric(postPhyloGLMM[,,"cor_language2__polAuth_Intercept__relAuth_Intercept"])),
                  aes(x = residCor), fill = "grey", colour = "grey") +
-    geom_pointinterval(data = tibble(median = median(postPhyloGLMM[,,2]),
-                                     lower = hdi(postPhyloGLMM[,,2])[,1],
-                                     upper = hdi(postPhyloGLMM[,,2])[,2],
+    geom_pointinterval(data = tibble(median = median(postPhyloGLMM[,,"cor_language2__polAuth_Intercept__relAuth_Intercept"]),
+                                     lower = HDInterval::hdi(postPhyloGLMM[,,"cor_language2__polAuth_Intercept__relAuth_Intercept"])[1],
+                                     upper = HDInterval::hdi(postPhyloGLMM[,,"cor_language2__polAuth_Intercept__relAuth_Intercept"])[2],
                                      y = 0), 
                        aes(y = y, x = median, xmin = lower, xmax = upper),
                        fatten_point = 3, size = 6) +
@@ -850,6 +850,52 @@ plotPhyloGLMM <- function(postPhyloGLMM) {
   out <- plot_grid(pA, pB, nrow = 2)
   # save
   ggsave(out, filename = "figures/plotPhyloCor.pdf", width = 6, height = 4.5)
+  return(out)
+}
+
+# plot phylogenetic signal from phylogenetic GLMM
+plotPhyloSignal <- function(postPhyloGLMM) {
+  # calculate phylogenetic signal
+  polSignal <- 
+    postPhyloGLMM[,,"sd_language__polAuth_Intercept"]^2 /
+    (postPhyloGLMM[,,"sd_language__polAuth_Intercept"]^2 +
+       postPhyloGLMM[,,"sd_language2__polAuth_Intercept"]^2 +
+       ((pi^2)/3))
+  relSignal <- 
+    postPhyloGLMM[,,"sd_language__relAuth_Intercept"]^2 /
+    (postPhyloGLMM[,,"sd_language__relAuth_Intercept"]^2 +
+       postPhyloGLMM[,,"sd_language2__relAuth_Intercept"]^2 +
+       ((pi^2)/3))
+  # plot
+  out <-
+    tibble(
+      auth = rep(c("Political authority", "Religious authority"), each = length(as.vector(polSignal))),
+      lambda = c(as.vector(polSignal), as.vector(relSignal))
+    ) %>%
+    ggplot() +
+    geom_density(aes(x = lambda, fill = auth, colour = auth), alpha = 0.5) +
+    geom_pointinterval(data = tibble(med = c(median(polSignal), median(relSignal)),
+                                     low = c(HDInterval::hdi(polSignal)[1], HDInterval::hdi(relSignal)[1]),
+                                     upp = c(HDInterval::hdi(polSignal)[2], HDInterval::hdi(relSignal)[2]),
+                                     auth = c("Political authority", "Religious authority")
+                                     ),
+                       aes(x = med, xmin = low, xmax = upp),
+                       size = 7) +
+    facet_grid(auth ~ .) +
+    xlab(expression(lambda)) +
+    scale_fill_manual(values = c("#5387b6","#c55852")) +
+    scale_colour_manual(values = c("#5387b6","#c55852")) +
+    ggtitle("Phylogenetic signal for political and religious authority") +
+    theme_classic() +
+    theme(axis.title.y = element_blank(),
+          axis.line = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          strip.background = element_blank(),
+          strip.text = element_blank(),
+          legend.title = element_blank())
+  # save
+  ggsave(out, filename = "figures/plotPhyloSignal.pdf", width = 5, height = 4)
   return(out)
 }
 
