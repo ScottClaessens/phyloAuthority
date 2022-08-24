@@ -1,0 +1,21 @@
+Society	Languages (ISO 639-3 codes)	Language name(s)	Number of speakers (year)
+Atayal	tay	"CiuliAtayal, SquliqAtayal"	"10,000 (2008)"
+Atayal	trv	Sediq	650 (2015)
+Bontok	blw	Balangaw	"11,500 (2005)"
+Bontok	lbk	BontokGuinaang	"19,600 (2007)"
+Ifugao	ifa	IfugaoAmganad	"27,100 (2000)"
+Ifugao	ifb	IfugaoBatad	"10,100 (2002)"
+Ifugao	ify	"IfugaoBayninan, KallahanKeleyqiq"	"8,000 (2000)"
+Minahasa	bnq	Bantik	"1,200 (2010)"
+Minahasa	tnt	Tontemboan	"14,900 (2010)"
+Nendö	ngr	Nanggu	200 (2013)
+Nendö	ntu	"LwepeSantaCruz, MaloSantaCruz"	"4,280 (2007)"
+Tanimbar	jmd	Yamdena	"25,000 (1991)"
+Tanimbar	slu	Selaru	"8,000 (2001)"
+Tanna	tnk	Kwamera	"3,500 (2001)"
+Tanna	tnl	Lenakel	"11,500 (2001)"
+Tanna	nwi	TannaSouthwest	"4,500 (2011)"
+Visayans	akl	AklanonBisayan	"526,000 (2010)"
+Visayans	ceb	Cebuano	"15,900,000 (2005)"
+Visayans	abx	Inabaknon	"26,400 (2010)"
+Visayans	sgd	Surigaonon	"501,000 (2005)"
