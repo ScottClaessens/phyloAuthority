@@ -526,7 +526,7 @@ plotButterfly <- function(phylo, iter, post, socNames, d, geo = FALSE) {
   pA <-
     p %>%
     filter(node %in% c(98, 102, 126, 130, 132)) %>%
-    select(node, starts_with("rel_")) %>%
+    dplyr::select(node, starts_with("rel_")) %>%
     rename(p1 = rel_probAbsent,
            p2 = rel_probSublocal,
            p3 = rel_probLocal,
@@ -536,7 +536,7 @@ plotButterfly <- function(phylo, iter, post, socNames, d, geo = FALSE) {
   pB <-
     p %>%
     filter(node %in% c(98, 102, 126, 130, 132)) %>%
-    select(node, starts_with("pol_")) %>%
+    dplyr::select(node, starts_with("pol_")) %>%
     rename(p1 = pol_probAbsent,
            p2 = pol_probSublocal,
            p3 = pol_probLocal,
@@ -727,7 +727,7 @@ plotSim <- function(simPost) {
   return(out)
 }
 
-# generate prior
+# generate prior for alpha_cross
 getPrior <- function(seed) {
   set.seed(seed)
   rnorm(200000, 0, 2)
@@ -760,9 +760,7 @@ plotDistance <- function(d, phylo, lonLat) {
     geom_point(alpha = 0.2, size = 0.5) +
     geom_smooth(method = "lm") +
     labs(x = "Geographic distance (log)",
-         y = "Linguistic distance",
-         title = "Relationship between linguistic and geographic\ndistance across Austronesian societies",
-         subtitle = paste0("Correlation = ", cor)) +
+         y = "Linguistic distance") +
     theme_classic()
   # save plot
   ggsave(out, filename = paste0("figures/plotDist.pdf"), height = 5, width = 5)
@@ -885,7 +883,6 @@ plotPhyloSignal <- function(postPhyloGLMM) {
     xlab(expression(lambda)) +
     scale_fill_manual(values = c("#5387b6","#c55852")) +
     scale_colour_manual(values = c("#5387b6","#c55852")) +
-    ggtitle("Phylogenetic signal for political and religious authority") +
     theme_classic() +
     theme(axis.title.y = element_blank(),
           axis.line = element_blank(),

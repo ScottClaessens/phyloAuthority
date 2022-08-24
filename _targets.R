@@ -4,10 +4,11 @@ library(future)
 library(future.callr)
 source("R/functions.R")
 options(tidyverse.quiet = TRUE)
+library(tidyverse)
 tar_option_set(packages = c("ape", "bayestestR", "brms", "colorspace", "cowplot", 
                             "geosphere", "ggrepel", "ggtree", "HDInterval", "phangorn", 
                             "phaseR", "phytools", "readxl", "rethinking", "rstan", 
-                            "tidybayes", "tidyverse"))
+                            "tidybayes"))
 plan(callr)
 # full workflow
 list(
